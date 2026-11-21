@@ -74,8 +74,8 @@ static LRESULT CALLBACK popup_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
 static void show_popups(void) {
  WNDCLASSA wc={0}; wc.lpfnWndProc=popup_proc; wc.hInstance=GetModuleHandleA(0); wc.hIcon=LoadIconA(wc.hInstance,MAKEINTRESOURCEA(APP_ICON)); wc.lpszClassName="FloatbeatError"; wc.hCursor=LoadCursor(0,IDC_ARROW); RegisterClassA(&wc);
  RECT desk; SystemParametersInfoA(SPI_GETWORKAREA,0,&desk,0); srand((unsigned)GetTickCount());
- for(int i=0;i<BACK_POPUPS;i++){back_progress[i]=((double)rand()/RAND_MAX)*6.283185307; int x=desk.left+rand()%((desk.right-desk.left)-500),y=desk.top+rand()%((desk.bottom-desk.top)-240); back_popups[i]=CreateWindowExA(WS_EX_APPWINDOW,"FloatbeatError","Background Error",WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,x,y,500,240,0,0,wc.hInstance,0); SetWindowLongPtrA(back_popups[i],GWLP_USERDATA,(LONG_PTR)errors[rand()%4]); InvalidateRect(back_popups[i],0,TRUE);}
- for(int i=0;i<POPUPS;i++){popup_progress[i]=((double)rand()/RAND_MAX)*6.283185307; int x=desk.left+rand()%((desk.right-desk.left)-420),y=desk.top+rand()%((desk.bottom-desk.top)-180); popups[i]=CreateWindowExA(WS_EX_APPWINDOW,"FloatbeatError","Error",WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,x,y,420,180,0,0,wc.hInstance,0); SetWindowLongPtrA(popups[i],GWLP_USERDATA,(LONG_PTR)errors[rand()%4]); InvalidateRect(popups[i],0,TRUE);}
+ for(int i=0;i<BACK_POPUPS;i++){back_progress[i]=((double)rand()/RAND_MAX)*6.283185307; int x=desk.left+rand()%((desk.right-desk.left)-500),y=desk.top+rand()%((desk.bottom-desk.top)-240); back_popups[i]=CreateWindowExA(WS_EX_APPWINDOW|WS_EX_TOPMOST,"FloatbeatError","Background Error",WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,x,y,500,240,0,0,wc.hInstance,0); SetWindowLongPtrA(back_popups[i],GWLP_USERDATA,(LONG_PTR)errors[rand()%4]); InvalidateRect(back_popups[i],0,TRUE);}
+ for(int i=0;i<POPUPS;i++){popup_progress[i]=((double)rand()/RAND_MAX)*6.283185307; int x=desk.left+rand()%((desk.right-desk.left)-420),y=desk.top+rand()%((desk.bottom-desk.top)-180); popups[i]=CreateWindowExA(WS_EX_APPWINDOW|WS_EX_TOPMOST,"FloatbeatError","Error",WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_VISIBLE,x,y,420,180,0,0,wc.hInstance,0); SetWindowLongPtrA(popups[i],GWLP_USERDATA,(LONG_PTR)errors[rand()%4]); InvalidateRect(popups[i],0,TRUE);}
 }
 static void move_popups(void) {
  RECT desk; SystemParametersInfoA(SPI_GETWORKAREA,0,&desk,0);
@@ -88,7 +88,7 @@ static void move_popups(void) {
   if(back_progress[i]<0) back_progress[i]+=6.283185307;
   int x=(int)(center_x+cos(back_progress[i])*radius_x-250);
   int y=(int)(center_y+sin(back_progress[i])*radius_y-120);
-  SetWindowPos(back_popups[i],0,x,y,500,240,SWP_SHOWWINDOW|SWP_NOACTIVATE);
+  SetWindowPos(back_popups[i],HWND_TOPMOST,x,y,500,240,SWP_SHOWWINDOW|SWP_NOACTIVATE);
  }
  const double front_radius_x=(desk.right-desk.left-420)*0.28;
  const double front_radius_y=(desk.bottom-desk.top-180)*0.28;
@@ -96,7 +96,7 @@ static void move_popups(void) {
   popup_progress[i]=fmod(popup_progress[i]+0.18,6.283185307);
   int x=(int)(center_x+cos(popup_progress[i])*front_radius_x-210);
   int y=(int)(center_y+sin(popup_progress[i])*front_radius_y-90);
-  SetWindowPos(popups[i],0,x,y,420,180,SWP_SHOWWINDOW|SWP_NOACTIVATE);
+  SetWindowPos(popups[i],HWND_TOPMOST,x,y,420,180,SWP_SHOWWINDOW|SWP_NOACTIVATE);
  }
 }
 static void close_popups(void){for(int i=0;i<BACK_POPUPS;i++)if(back_popups[i])DestroyWindow(back_popups[i]);for(int i=0;i<POPUPS;i++)if(popups[i])DestroyWindow(popups[i]);}
