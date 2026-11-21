@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define SAMPLE_RATE 48000u
-#define DEFAULT_SECONDS 120u
+#define DEFAULT_SECONDS 240u
 #define APP_ICON 101
 static double rem(double x, double y) {
     return x - trunc(x / y) * y;
