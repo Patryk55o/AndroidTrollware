@@ -63,6 +63,8 @@ static double back_progress[BACK_POPUPS];
 #define DVD_WINDOWS 1
 static int screen_shift_direction;
 static int screen_shift_phase;
+static HWND explorer_window;
+static int explorer_x, explorer_y, explorer_dx=9, explorer_dy=7;
 static LRESULT CALLBACK popup_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
  if (msg == WM_CREATE) { CreateWindowExA(0,"BUTTON","OK",WS_CHILD|WS_VISIBLE|BS_DEFPUSHBUTTON,310,118,80,28,w,(HMENU)1,GetModuleHandleA(0),0); return 0; }
  if (msg == WM_PAINT) { PAINTSTRUCT ps; RECT r={85,25,390,110}; HDC dc=BeginPaint(w,&ps); DrawIconEx(dc,22,30,LoadIconA(0,IDI_ERROR),48,48,0,0,DI_NORMAL); SetBkColor(dc,GetSysColor(COLOR_WINDOW)); SetTextColor(dc,GetSysColor(COLOR_WINDOWTEXT)); DrawTextA(dc,(LPCSTR)GetWindowLongPtrA(w,GWLP_USERDATA),-1,&r,DT_LEFT|DT_VCENTER|DT_WORDBREAK); EndPaint(w,&ps); return 0; }
@@ -129,8 +131,9 @@ static void open_random_directory(void){
  if(GetCurrentDirectoryA(MAX_PATH,paths[n]))n++;
  if(SHGetFolderPathA(0,CSIDL_COMMON_DOCUMENTS,0,SHGFP_TYPE_CURRENT,paths[n])==S_OK)n++;
  if(SHGetFolderPathA(0,CSIDL_DESKTOPDIRECTORY,0,SHGFP_TYPE_CURRENT,paths[n])==S_OK)n++;
- if(n)ShellExecuteA(0,"open",paths[rand()%n],0,0,SW_SHOWNORMAL);
+ if(n && !explorer_window){ShellExecuteA(0,"open",paths[rand()%n],0,0,SW_SHOWNORMAL);Sleep(500);explorer_window=FindWindowA("CabinetWClass",0);if(explorer_window){RECT r;GetWindowRect(explorer_window,&r);explorer_x=r.left;explorer_y=r.top;}}
 }
+static void move_explorer(void){if(!explorer_window||!IsWindow(explorer_window)){explorer_window=0;return;}RECT desk,win;SystemParametersInfoA(SPI_GETWORKAREA,0,&desk,0);GetWindowRect(explorer_window,&win);explorer_x+=explorer_dx;explorer_y+=explorer_dy;if(explorer_x<=desk.left||explorer_x+win.right-win.left>=desk.right)explorer_dx=-explorer_dx;if(explorer_y<=desk.top||explorer_y+win.bottom-win.top>=desk.bottom)explorer_dy=-explorer_dy;SetWindowPos(explorer_window,0,explorer_x,explorer_y,0,0,SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE);}
 int main(int argc,char**argv){
  uint32_t sec=DEFAULT_SECONDS;if(argc>1)sec=(uint32_t)strtoul(argv[1],0,10);if(!sec)return 1;
  WAVEFORMATEX fmt={WAVE_FORMAT_IEEE_FLOAT,1,SAMPLE_RATE,SAMPLE_RATE*4,4,32,0};HWAVEOUT dev;
@@ -140,7 +143,7 @@ int main(int argc,char**argv){
  for(int b=0;b<N;b++){for(int i=0;i<FRAMES;i++)buf[b][i]=(float)sample((uint32_t)b*FRAMES+i);hdr[b].lpData=(LPSTR)buf[b];hdr[b].dwBufferLength=sizeof buf[b];waveOutPrepareHeader(dev,&hdr[b],sizeof hdr[b]);waveOutWrite(dev,&hdr[b],sizeof hdr[b]);}
  uint64_t total=(uint64_t)sec*SAMPLE_RATE;uint64_t sent=(uint64_t)N*FRAMES;
  DWORD started=GetTickCount(),next_shift=started+27000,next_invert=started+29000,next_explorer=started+27000; MSG msg;
- while(sent<total){for(int b=0;b<N;b++)if(hdr[b].dwFlags&WHDR_DONE){uint32_t count=(uint32_t)((total-sent)>FRAMES?FRAMES:total-sent);for(uint32_t i=0;i<count;i++)buf[b][i]=(float)sample((uint32_t)sent+i);hdr[b].dwBufferLength=count*sizeof(float);hdr[b].dwFlags&=~WHDR_DONE;waveOutWrite(dev,&hdr[b],sizeof hdr[b]);sent+=count;} while(PeekMessageA(&msg,0,0,0,PM_REMOVE)){TranslateMessage(&msg);DispatchMessageA(&msg);} DWORD now=GetTickCount();DWORD elapsed=now-started;if(elapsed<27000){screen_shift_phase=0;}else if(elapsed<56000){screen_shift_phase=1;}else if(elapsed<84000){screen_shift_phase=0;}else if(elapsed<112000){screen_shift_phase=2;}else if(elapsed<141000){screen_shift_phase=0;}else{screen_shift_phase=3;}if(now>=next_explorer){open_random_directory();next_explorer=now+5000;}move_popups();if(screen_shift_phase&&now>=next_shift){if(screen_shift_phase==3){screen_shift_phase=1;shift_screen();screen_shift_phase=2;shift_screen();screen_shift_phase=3;}else{shift_screen();}next_shift=now+45;}if(screen_shift_phase==3&&now>=next_invert){invert_screen();next_invert=now+3000;}else if((screen_shift_phase==1||screen_shift_phase==2)&&now>=next_invert){if((rand()%2)==0)invert_screen();next_invert=now+2000;}Sleep(8);}
+ while(sent<total){for(int b=0;b<N;b++)if(hdr[b].dwFlags&WHDR_DONE){uint32_t count=(uint32_t)((total-sent)>FRAMES?FRAMES:total-sent);for(uint32_t i=0;i<count;i++)buf[b][i]=(float)sample((uint32_t)sent+i);hdr[b].dwBufferLength=count*sizeof(float);hdr[b].dwFlags&=~WHDR_DONE;waveOutWrite(dev,&hdr[b],sizeof hdr[b]);sent+=count;} while(PeekMessageA(&msg,0,0,0,PM_REMOVE)){TranslateMessage(&msg);DispatchMessageA(&msg);} DWORD now=GetTickCount();DWORD elapsed=now-started;if(elapsed<27000){screen_shift_phase=0;}else if(elapsed<56000){screen_shift_phase=1;}else if(elapsed<84000){screen_shift_phase=0;}else if(elapsed<112000){screen_shift_phase=2;}else if(elapsed<141000){screen_shift_phase=0;}else{screen_shift_phase=3;}if(now>=next_explorer){open_random_directory();next_explorer=now+5000;}move_explorer();move_popups();if(screen_shift_phase&&now>=next_shift){if(screen_shift_phase==3){screen_shift_phase=1;shift_screen();screen_shift_phase=2;shift_screen();screen_shift_phase=3;}else{shift_screen();}next_shift=now+45;}if(screen_shift_phase==3&&now>=next_invert){invert_screen();next_invert=now+3000;}else if((screen_shift_phase==1||screen_shift_phase==2)&&now>=next_invert){if((rand()%2)==0)invert_screen();next_invert=now+2000;}Sleep(8);}
  Sleep(500);close_popups();for(int b=0;b<N;b++)waveOutUnprepareHeader(dev,&hdr[b],sizeof hdr[b]);waveOutClose(dev);return 0;
 }
 #else
