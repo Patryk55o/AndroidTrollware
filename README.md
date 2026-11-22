@@ -1,5 +1,7 @@
 # AndroidTrollware
 
+A project that will (probably) not blow up. but it might blow your eyes (joke)
+
 # ⚠️ Epilepsy Warning ⚠️
 
 This virus/trollware has flashing effects, use with caution
