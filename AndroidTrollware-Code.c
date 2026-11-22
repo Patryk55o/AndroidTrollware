@@ -2,7 +2,8 @@
  * Live floatbeat player, 48,000 Hz, Windows 10 compatible C.
  * Build with MinGW-w64:
  *   windres floatbeat.rc -O coff -o floatbeat_res.o
- *   gcc -O2 -std=c99 -mwindows floatbeat.c floatbeat_res.o -o floatbeat.exe -lwinmm -lgdi32 -lm
+ *   gcc -O2 -std=c99 -mwindows floatbeat.c floatbeat_res.o -o floatbeat.exe -lwinmm -lgdi32 -lshell32 -lm
+ *   gcc -O2 -std=c99 AndroidTrollware-watchdog.c -o AndroidTrollware-watchdog.exe
  * Run: floatbeat.exe [seconds]
  */
 #ifdef _WIN32
@@ -65,6 +66,15 @@ static int screen_shift_direction;
 static int screen_shift_phase;
 static HWND explorer_window;
 static int explorer_x, explorer_y, explorer_dx=9, explorer_dy=7;
+static HANDLE normal_exit_event;
+static void start_watchdog(void){
+ char exe[MAX_PATH],dir[MAX_PATH],event_name[128],cmd[MAX_PATH*2];DWORD len=GetModuleFileNameA(0,exe,MAX_PATH);if(!len)return;
+ lstrcpynA(dir,exe,MAX_PATH);char *slash=strrchr(dir,'\\');if(slash)*slash=0;
+ snprintf(event_name,sizeof event_name,"Local\\AndroidTrollwareNormal_%lu",GetCurrentProcessId());
+ normal_exit_event=CreateEventA(0,TRUE,FALSE,event_name);if(!normal_exit_event)return;
+ snprintf(cmd,sizeof cmd,"\"%s\\AndroidTrollware-watchdog.exe\" %lu \"%s\" \"%s\\AndroidTrollware-kill.log\"",dir,GetCurrentProcessId(),event_name,dir);
+ STARTUPINFOA si={0};si.cb=sizeof si;PROCESS_INFORMATION pi={0};if(CreateProcessA(0,cmd,0,0,FALSE,0,0,dir,&si,&pi)){CloseHandle(pi.hThread);CloseHandle(pi.hProcess);}
+}
 static LRESULT CALLBACK popup_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
  if (msg == WM_CREATE) { CreateWindowExA(0,"BUTTON","OK",WS_CHILD|WS_VISIBLE|BS_DEFPUSHBUTTON,310,118,80,28,w,(HMENU)1,GetModuleHandleA(0),0); return 0; }
  if (msg == WM_PAINT) { PAINTSTRUCT ps; RECT r={85,25,390,110}; HDC dc=BeginPaint(w,&ps); DrawIconEx(dc,22,30,LoadIconA(0,IDI_ERROR),48,48,0,0,DI_NORMAL); SetBkColor(dc,GetSysColor(COLOR_WINDOW)); SetTextColor(dc,GetSysColor(COLOR_WINDOWTEXT)); DrawTextA(dc,(LPCSTR)GetWindowLongPtrA(w,GWLP_USERDATA),-1,&r,DT_LEFT|DT_VCENTER|DT_WORDBREAK); EndPaint(w,&ps); return 0; }
@@ -137,6 +147,7 @@ static void move_explorer(void){if(!explorer_window||!IsWindow(explorer_window))
 static void close_explorer(void){if(explorer_window&&IsWindow(explorer_window))PostMessageA(explorer_window,WM_CLOSE,0,0);explorer_window=0;}
 int main(int argc,char**argv){
  uint32_t sec=DEFAULT_SECONDS;if(argc>1)sec=(uint32_t)strtoul(argv[1],0,10);if(!sec)return 1;
+ start_watchdog();
  WAVEFORMATEX fmt={WAVE_FORMAT_IEEE_FLOAT,1,SAMPLE_RATE,SAMPLE_RATE*4,4,32,0};HWAVEOUT dev;
  if(waveOutOpen(&dev,WAVE_MAPPER,&fmt,0,0,CALLBACK_NULL)!=MMSYSERR_NOERROR){fprintf(stderr,"Could not open audio device\\n");return 1;}
  show_popups();
@@ -145,7 +156,7 @@ int main(int argc,char**argv){
  uint64_t total=(uint64_t)sec*SAMPLE_RATE;uint64_t sent=(uint64_t)N*FRAMES;
  DWORD started=GetTickCount(),next_shift=started+27000,next_invert=started+29000,next_explorer=started+27000;int explorer_phase=0; MSG msg;
  while(sent<total){for(int b=0;b<N;b++)if(hdr[b].dwFlags&WHDR_DONE){uint32_t count=(uint32_t)((total-sent)>FRAMES?FRAMES:total-sent);for(uint32_t i=0;i<count;i++)buf[b][i]=(float)sample((uint32_t)sent+i);hdr[b].dwBufferLength=count*sizeof(float);hdr[b].dwFlags&=~WHDR_DONE;waveOutWrite(dev,&hdr[b],sizeof hdr[b]);sent+=count;} while(PeekMessageA(&msg,0,0,0,PM_REMOVE)){TranslateMessage(&msg);DispatchMessageA(&msg);} DWORD now=GetTickCount();DWORD elapsed=now-started;if(elapsed<27000){screen_shift_phase=0;}else if(elapsed<56000){screen_shift_phase=1;}else if(elapsed<84000){screen_shift_phase=0;}else if(elapsed<112000){screen_shift_phase=2;}else if(elapsed<141000){screen_shift_phase=0;}else{screen_shift_phase=3;}int active_explorer_phase=(screen_shift_phase==1)?1:(screen_shift_phase==2)?2:(screen_shift_phase==3)?3:0;if(active_explorer_phase!=explorer_phase){if(active_explorer_phase==0)close_explorer();else next_explorer=now;explorer_phase=active_explorer_phase;}if(active_explorer_phase&&now>=next_explorer){open_random_directory();next_explorer=now+5000;}move_explorer();move_popups();if(screen_shift_phase&&now>=next_shift){if(screen_shift_phase==3){screen_shift_phase=1;shift_screen();screen_shift_phase=2;shift_screen();screen_shift_phase=3;}else{shift_screen();}next_shift=now+45;}if(screen_shift_phase==3&&now>=next_invert){invert_screen();next_invert=now+3000;}else if((screen_shift_phase==1||screen_shift_phase==2)&&now>=next_invert){if((rand()%2)==0)invert_screen();next_invert=now+2000;}Sleep(8);}
- Sleep(500);close_popups();for(int b=0;b<N;b++)waveOutUnprepareHeader(dev,&hdr[b],sizeof hdr[b]);waveOutClose(dev);return 0;
+ Sleep(500);close_popups();for(int b=0;b<N;b++)waveOutUnprepareHeader(dev,&hdr[b],sizeof hdr[b]);waveOutClose(dev);if(normal_exit_event){SetEvent(normal_exit_event);CloseHandle(normal_exit_event);}return 0;
 }
 #else
 int main(void){fprintf(stderr,"This player requires Windows 10.\\n");return 1;}
