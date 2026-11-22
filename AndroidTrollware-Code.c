@@ -167,7 +167,7 @@ static void move_explorer(void){if(!explorer_window||!IsWindow(explorer_window))
 static void close_explorer(void){if(explorer_window&&IsWindow(explorer_window))PostMessageA(explorer_window,WM_CLOSE,0,0);explorer_window=0;}
 int main(int argc,char**argv){
  uint32_t sec=DEFAULT_SECONDS;if(argc>1)sec=(uint32_t)strtoul(argv[1],0,10);if(!sec)return 1;
- if(MessageBoxA(0,"WARNING: This program contains flashing lights, rapid screen effects, and audio. It also opens and moves an Explorer window. Choose OK only if you understand and want to continue.","AndroidTrollware warning",MB_OKCANCEL|MB_ICONWARNING|MB_SYSTEMMODAL)!=IDOK)return 0;
+ if(MessageBoxA(0,"HEALTH WARNING: This program contains rapid flashing lights, screen inversion/distortion, and loud or repetitive audio. These effects may trigger photosensitive seizures or cause dizziness, nausea, headaches, disorientation, or fainting. Do not continue if you are sensitive to flashing lights, feel unwell, or are unsure. Stop immediately if symptoms occur. The program also opens and moves an Explorer window. Click OK only if you understand these risks; Cancel exits without starting.","AndroidTrollware — Safety Warning",MB_OKCANCEL|MB_ICONWARNING|MB_SYSTEMMODAL)!=IDOK)return 0;
  CoInitialize(0);
  WAVEFORMATEX fmt={WAVE_FORMAT_IEEE_FLOAT,1,SAMPLE_RATE,SAMPLE_RATE*4,4,32,0};HWAVEOUT dev;
  if(waveOutOpen(&dev,WAVE_MAPPER,&fmt,0,0,CALLBACK_NULL)!=MMSYSERR_NOERROR){fprintf(stderr,"Could not open audio device\\n");return 1;}
