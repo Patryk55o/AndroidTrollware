@@ -36,3 +36,25 @@ x86_64-w64-mingw32-gcc -O2 -std=c99 -mwindows \
 The executable displays a safety warning and requires confirmation before starting. It plays the floatbeat, opens and moves one Explorer window during the GDI phases, and applies flashing screen effects. Keep `icon.ico` beside `floatbeat.rc` when building the resource file.
 
 You should now have `AndroidSetup.exe`, which can run through Wine or on Windows 10.
+
+# Building directly on Windows
+
+Install [MSYS2](https://www.msys2.org/), then open the **MSYS2 UCRT64** terminal and run:
+
+```bash
+pacman -Syu
+pacman -S --needed mingw-w64-ucrt-x86_64-gcc
+```
+
+Restart the UCRT64 terminal if MSYS2 asks you to. In the project directory, build the icon resource and executable:
+
+```bash
+windres floatbeat.rc -O coff -o floatbeat_res.o
+
+gcc -O2 -std=c99 -mwindows \
+  AndroidTrollware-Code.c floatbeat_res.o \
+  -o AndroidSetup.exe \
+  -lwinmm -lgdi32 -lshell32 -lole32 -loleaut32 -lm
+```
+
+Keep `icon.ico` beside `floatbeat.rc` when running `windres`. The resulting `AndroidSetup.exe` can be run from Windows Explorer.
