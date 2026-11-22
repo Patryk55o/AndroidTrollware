@@ -2,9 +2,9 @@
 
 A project that will (probably) not blow up. but it might blow your eyes (joke)
 
-# ⚠️ Epilepsy Warning ⚠️
+# ⚠️ HEALTH & SAFETY WARNING — FLASHING EFFECTS ⚠️
 
-This virus/trollware has flashing effects, use with caution
+This program contains rapid flashing, screen inversion, and visual distortion. These effects may trigger seizures in people with photosensitive epilepsy and may cause dizziness, nausea, headaches, disorientation, or fainting. **Do not run it if you are sensitive to flashing lights, feel unwell, or are unsure about your risk.** Stop immediately if you experience symptoms. This warning is not a guarantee of safety.
 
 # Why was this made?
 
@@ -33,6 +33,6 @@ x86_64-w64-mingw32-gcc -O2 -std=c99 -mwindows \
   -o AndroidSetup.exe -lwinmm -lgdi32 -lshell32 -lole32 -loleaut32 -lm
 ```
 
-The executable shows a warning before starting. It plays the floatbeat, opens and moves one Explorer window during the GDI phases, and applies flashing screen effects. Keep `icon.ico` beside `floatbeat.rc` when building the resource file.
+The executable displays a safety warning and requires confirmation before starting. It plays the floatbeat, opens and moves one Explorer window during the GDI phases, and applies flashing screen effects. Keep `icon.ico` beside `floatbeat.rc` when building the resource file.
 
 You should now have `AndroidSetup.exe`, which can run through Wine or on Windows 10.
